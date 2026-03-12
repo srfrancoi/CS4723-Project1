@@ -1,0 +1,17 @@
+# Compiled Binaries [cite: 194]
+MTUHash
+AECalculator
+MTUHash.exe
+AECalculator.exe
+
+# Object files and temporary build files [cite: 194]
+*.o
+*.obj
+
+# Output files that are regenerated during testing [cite: 156, 160, 168]
+Out1.txt
+OutFinal.txt
+AFR.txt
+
+# VS Code specific files
+.vscode/
