@@ -23,18 +23,64 @@ int S1[4][16] = {
     {15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13}      // Row 3 [cite: 129-141]
 };
 
-// Core Hash Function
-void mtu_hash(const char *input_bits, char *output_bits, int rounds) {
-    // 1. Convert input string to bit array
-    // 2. Loop for 'rounds' (1 to 16)
-    // 3. Perform Expansion (32 -> 48 bits) 
-    // 4. Perform S-Box Substitution (48 -> 32 bits) 
-    // 5. Store intermediate result if rounds == 1 [cite: 156]
+void es_operation(const char *input, char *output) {
+    char expanded[49]; // 48 bits + null terminator [cite: 32]
+    char final_32[33]; // 32 bits + null terminator [cite: 148]
+    final_32[0] = '\0';
+
+    // Step 1: Expansion (32-bit -> 48-bit) [cite: 145]
+    for (int i = 0; i < 48; i++) {
+        expanded[i] = input[E_TABLE[i] - 1]; // E_TABLE is 1-indexed [cite: 59]
+    }
+    expanded[48] = '\0';
+
+    // Step 2: Substitution (8 chunks of 6-bit -> 4-bit) [cite: 146, 147]
+    for (int i = 0; i < 8; i++) {
+        char chunk[7];
+        strncpy(chunk, &expanded[i * 6], 6);
+        chunk[6] = '\0';
+
+        // Get S-Box indices [cite: 150]
+        int row = ((chunk[0] - '0') << 1) | (chunk[5] - '0');
+        int col = ((chunk[1] - '0') << 3) | ((chunk[2] - '0') << 2) | 
+                  ((chunk[3] - '0') << 1) | (chunk[4] - '0');
+
+        int val = S1[row][col]; // [cite: 150]
+
+        // Convert decimal val to 4 bits [cite: 147]
+        for (int j = 3; j >= 0; j--) {
+            final_32[(i * 4) + j] = (val % 2) + '0';
+            val /= 2;
+        }
+    }
+    final_32[32] = '\0';
+    strcpy(output, final_32);
 }
 
 int main(int argc, char *argv[]) {
-    // Read from Hashin.txt [cite: 154]
-    // Call mtu_hash for 1 round -> Save to Out1.txt [cite: 156]
-    // Call mtu_hash for 16 rounds -> Save to OutFinal.txt [cite: 157]
+    // 1. Read input from Hashin.txt (or argv[1] as per grader instructions) [cite: 154, 207]
+    char current_hash[33];
+    FILE *fin = fopen(argv[1], "r");
+    fscanf(fin, "%s", current_hash);
+    fclose(fin);
+
+    char next_hash[33];
+    for (int round = 1; round <= 16; round++) {
+        es_operation(current_hash, next_hash);
+        strcpy(current_hash, next_hash);
+
+        // Task 1: Save Round 1 output [cite: 156]
+        if (round == 1) {
+            FILE *f1 = fopen("Out1.txt", "w");
+            fprintf(f1, "%s", current_hash);
+            fclose(f1);
+        }
+    }
+
+    // Task 1: Save Final output [cite: 157, 160]
+    FILE *fout = fopen("OutFinal.txt", "w");
+    fprintf(fout, "%s", current_hash);
+    fclose(fout);
+
     return 0;
 }
